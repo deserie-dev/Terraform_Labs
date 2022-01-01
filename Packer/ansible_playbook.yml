@@ -1,0 +1,33 @@
+---
+- name: "Provision Image"
+  hosts: all
+  remote_user: ubuntu
+  become_method: sudo
+  become: true
+  tasks:
+    - name: Update apt cache and install Nginx
+      apt:
+        name: nginx
+        state: latest
+        update_cache: yes
+    - name: Allow all access to tcp port 80
+      ufw:
+        rule: allow
+        port: "80"
+        proto: tcp
+    - name: Get Nodejs apt key
+      apt_key:
+        url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+        state: present
+    - name: Install Nodejs version 12 binary
+      apt_repository:
+        repo: "deb https://deb.nodesource.com/node_12.x bionic main"
+        state: present
+    - name: Install Node
+      apt:
+        name: nodejs
+        state: present
+    - name: Install MongoDB
+      apt:
+        name: mongodb
+        state: present

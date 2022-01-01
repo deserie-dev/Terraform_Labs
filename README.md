@@ -21,3 +21,16 @@ These are some hands-on labs where I use Terraform to provision AWS infrastructu
 set AWS_ACCESS_KEY_ID=your_access_key_id
 set AWS_SECRET_ACCESS_KEY=your_secret_access_key
 ```
+
+3. Create a Packer template called packer.pkr.hcl that creates an Amazon Machine Image (AMI). See Packer folder.
+
+4. Build AMI by running the following commands
+
+```
+packer validate packer.pkr.hcl
+packer build packer.pkr.hcl
+```
+
+![](/images/validate.png)
+
+![](/images/build.png)
