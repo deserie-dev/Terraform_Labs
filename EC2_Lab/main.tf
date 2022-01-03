@@ -1,12 +1,13 @@
 provider "aws" {
+ profile = "terraform-labs"
  region = "us-east-1"
 }
 
 resource "aws_instance" "example" {
- ami = "ami-0cdce5f44e3e75ab2"
+ ami = "ami-0c55b159cbfafe1f0"
  instance_type = "t2.micro"
 
  tags = {
-    Name = "terraform-lab"
+  Name = "terraform-lab"
  }
 }

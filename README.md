@@ -15,11 +15,10 @@ These are some hands-on labs where I use Terraform to provision AWS infrastructu
 
 ![](/images/policies.png)
 
-2. Set AWS credentials for the above IAM user. I am on a Windows machine, and to set these variables on Windows, use :
+2. Configure AWS credentials for the above IAM user.
 
 ```
-set AWS_ACCESS_KEY_ID=your_access_key_id
-set AWS_SECRET_ACCESS_KEY=your_secret_access_key
+aws configure --profile terraform-labs
 ```
 
 ---
@@ -51,6 +50,7 @@ packer build packer.pkr.hcl
 
 ```
 provider "aws" {
+ profile = "terraform-labs"
  region = " us-east-1"
 }
 ```
@@ -99,5 +99,81 @@ terraform apply
 ## Verify instance has been created in the EC2 console.
 
 ![](/images/ec2-1.png)
+
+## Destroy EC2 Instance
+
+To destroy the EC2 instance run
+
+```
+terraform destroy
+```
+
+</p></details>
+
+<details>
+<summary><b> Provision an EC2 Instance with a Data Source</b></summary><p>
+
+Provision an instance with a data source to dynamically look up the latest value of an Ubuntu AMI.
+
+- data sources are elements that let you fetch data at runtime and perform computations.
+
+We need to configure main.tf to read from the external data source, allowing us to query the most recent Ubuntu AMI published to AWS.
+
+```
+data "aws_ami" "ubuntu" {
+  most_recent = true
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-*"]
+  }
+
+  owners = ["099720109477"]
+}
+
+resource "aws_instance" "terraformlab" {
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = "t2.micro"
+  tags = {
+    Name = "TerraformLab"
+  }
+}
+```
+
+---
+
+```
+data "aws_ami" "ubuntu"
+```
+
+- Declares an aws_ami data source with name “ubuntu”
+
+```
+filter
+```
+
+- Sets a filter to select all AMIs with name matching this regex expression
+
+```
+owners = ["099720109477"]
+```
+
+- Ubuntu AWS account id
+
+```
+resource "aws_instance" "helloworld" {
+ ami = data.aws_ami.ubuntu.id
+ instance_type = "t2.micro"
+ tags = {
+ Name = "HelloWorld"
+ }
+}
+```
+
+- Chains resources
+
+Run _terraform apply_
+
+![](/images/data-source.png)
 
 </p></details>
