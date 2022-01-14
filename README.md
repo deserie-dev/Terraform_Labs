@@ -111,7 +111,7 @@ terraform destroy
 </p></details>
 
 <details>
-<summary><b> Provision an EC2 Instance with a Data Source</b></summary><p>
+<summary><b>Provision an EC2 Instance with a Data Source</b></summary><p>
 
 Provision an instance with a data source to dynamically look up the latest value of an Ubuntu AMI.
 
@@ -175,5 +175,64 @@ resource "aws_instance" "helloworld" {
 Run _terraform apply_
 
 ![](/images/data-source.png)
+
+</p></details>
+
+<details>
+<summary><b>Deploy a Single Web Server</b></summary><p>
+
+Deploy a simple web server that can respond to HTTP requests.
+
+By default, AWS does not allow any incoming or outgoing traffic from an EC2
+Instance. To allow the EC2 Instance to receive traffic on port 8080, you
+need to create a security group:
+
+```
+resource "aws_security_group" "instance" {
+ name = "terraform-example-instance"
+ ingress {
+ from_port = 8080
+ to_port = 8080
+ protocol = "tcp"
+ cidr_blocks = ["0.0.0.0/0"]
+ }
+}
+```
+
+This creates a new resource called _aws_security_group_ and specifies that this
+group allows incoming TCP requests on port 8080 from the CIDR block 0.0.0.0/0.
+
+You need to tell the EC2 Instance tO use it by passing the ID of the security group into the vpc_security_group_ids argument of the aws_instance resource.
+
+```
+vpc_security_group_ids = [aws_security_group.instance.id]
+```
+
+To get the IP address of your server, you can provide the IP address as an
+output variable:
+
+```
+output "public_ip" {
+ value = aws_instance.example.public_ip
+ description = "The public IP address of the web server"
+}
+```
+
+This references the public_ip attribute of the aws_instance resource. Output variables show up in the console after you run terraform apply, which users of your Terraform code might find useful (e.g., you now know what IP to test after the web server is deployed).
+
+Run \_terraform
+
+---
+
+![](/images/ec2_lab_2.png)
+
+---
+
+![](/images/ec2_lab_2.2.png)
+
+</p></details>
+
+<details>
+<summary><b>Deploying a Cluster of Web Servers</b></summary><p>
 
 </p></details>
