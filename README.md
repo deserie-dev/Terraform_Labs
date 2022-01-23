@@ -4,25 +4,6 @@ These are some hands-on labs where I use Terraform to provision AWS infrastructu
 
 ---
 
-1. Setup AWS user. Add the following managed IAM Policies to the new IAM user :
-
-- AmazonEC2FullAccess
-- AmazonS3FullAccess
-- AmazonDynamoDBFullAccess
-- AmazonRDSFullAccess
-- CloudWatchFullAccess
-- IAMFullAccess
-
-![](/images/policies.png)
-
-2. Configure AWS credentials for the above IAM user.
-
-```
-aws configure --profile terraform-labs
-```
-
----
-
 <details>
 <summary><b>Create an AWS AMI Using Packer</b></summary><p>
 
@@ -234,5 +215,115 @@ Run \_terraform
 
 <details>
 <summary><b>Deploying a Cluster of Web Servers</b></summary><p>
+
+To create an Auto Scaling Group first create a launch template or launch configuration.
+
+```
+resource "aws_launch_template" "example"
+```
+
+Now you can create the ASG itself using the aws_autoscaling_group
+resource:
+
+```
+resource "aws_autoscaling_group" "example" {
+ launch_template = aws_launch_template.example.name
+ min_size = 2
+ max_size = 10
+ tag {
+ key = "Name"
+ value = "terraform-asg-example"
+ propagate_at_launch = true
+ }
+}
+```
+
+This ASG will run between 2 and 10 EC2 Instances (defaulting to 2 for the
+initial launch), each tagged with the name terraform-asg-example.
+
+</p></details>
+
+<details>
+<summary><b>Create an AWS Budget</b></summary><p>
+
+1. Configure the AWS CLI from your terminal. Follow the prompts to input your AWS Access Key ID and Secret Access Key.
+
+```
+aws configure
+```
+
+2. Create a main.tf file.
+
+3. Start by creating the provider block, which configures the specified provider, in this case AWS. A provider is a plugin that Terraform uses to create and manage your resources.
+
+```
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 3.5.0"
+    }
+  }
+}
+```
+
+4. Tell the provider (AWS), what region to use.
+
+```
+provider "aws" {
+  region = "af-south-1"
+}
+```
+
+5. Create a resource block to define components of your infrastructure, in this lab, we're creating a budget.
+
+```
+resource "aws_budgets_budget" "terraform-budgets-lab" {
+  name              = "monthly-budget"
+  budget_type       = "COST"
+  limit_amount      = "200"
+  limit_unit        = "USD"
+  time_unit         = "MONTHLY"
+  time_period_start = "2022-01-24_00:01"
+}
+```
+
+6. Initialize terraform
+
+```
+terraform init
+```
+
+![](/images/init-2.png)
+
+7. Format your Terraform code
+
+```
+terraform fmt
+```
+
+8. To make sure your Terraform code is valid run
+
+```
+terraform validate
+```
+
+![](/images/fmt-1.png)
+
+9. To see all the resources that Terraform will create run
+
+```
+terraform plan
+```
+
+10. To actually create create the resources run
+
+```
+terraform apply
+```
+
+![](/images/apply-2.png)
+
+![](/images/apply-3.png)
 
 </p></details>
