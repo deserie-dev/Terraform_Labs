@@ -421,11 +421,11 @@ resource "aws_dynamodb_table" "terraform_locks" {
 
 3. Run Terraform init (terraform init upgrade) and terraform apply
 
-![](/images/apply-2.png)
+![](/images/s3-1.png)
 
-![](/images/apply-2.png)
+![](/images/s3-2.png)
 
-![](/images/apply-2.png)
+![](/images/s3-3.png)
 
 4. After everything is deployed, you will have an S3 bucket and DynamoDB table, but the Terraform state will still be stored locally. To configure Terraform to store the state in your S3 bucket (with encryption and locking), you need to add a backend configuration to your Terraform code(inside the Terraform block).
 
@@ -438,6 +438,10 @@ backend "s3" {
     encrypt        = true
   }
 ```
+
+![](/images/s3-4.png)
+
+![](/images/s3-5.png)
 
 With this backend enabled, Terraform will automatically pull the latest state from this S3 bucket before running a command, and automatically push the latest state to the S3 bucket after running a command.
 
