@@ -241,6 +241,36 @@ resource "aws_autoscaling_group" "example" {
 This ASG will run between 2 and 10 EC2 Instances (defaulting to 2 for the
 initial launch), each tagged with the name terraform-asg-example.
 
+---
+
+Every Terraform resource supports several lifecycle settings that configure how that resource is created, updated, and/or deleted. A particularly useful lifecycle setting is create_before_destroy. If you set create_before_destroy to true, Terraform will invert the order in which it replaces resources, creating the replacement resource first (including updating any references that were pointing at the old resource to point to the replacement) and then deleting the old resource.
+
+```
+lifecycle {
+ create_before_destroy = true
+ }
+```
+
+---
+
+Another parameter that you need to add to your ASG to make it work: subnet*ids. This parameter specifies to the ASG into which subnets the EC2 Instances should be deployed. Each subnet lives in an isolated AWS AZ, so by deploying your Instances across multiple subnets, you ensure that your service can keep running even if some of the
+datacenters have an outage. Use the \_aws_vpc* data source.
+
+You can pull the subnet IDs out of the aws*subnet_ids data source
+and tell your ASG to use those subnets via the \_vpc_zone_identifier* argument:
+
+```
+vpc_zone_identifier = data.aws_subnet_ids.default.ids
+```
+
+---
+
+### Deploying a Load Balancer
+
+Now you need to deploy a load balancer to distribute traffic across
+your servers and to give all your users the IP (actually, the DNS name) of
+the load balancer. Use by Amazon’s Elastic Load Balancer (ELB) service.
+
 </p></details>
 
 <details>
@@ -325,5 +355,90 @@ terraform apply
 ![](/images/apply-2.png)
 
 ![](/images/apply-3.png)
+
+</p></details>
+
+<details>
+<summary><b>AWS S3 Remote Backend</b></summary><p>
+
+The best way to manage shared storage for state files is to use Terraform’s built-in support for remote backends. A
+Terraform backend determines how Terraform loads and stores state. The default backend is the local backend, which stores the state file on your local disk. Remote backends allow you to store the state file in a remote, shared store. A number of remote backends are supported, including Amazon S3; Azure Storage; Google Cloud Storage; and HashiCorp’s Terraform Cloud.
+
+To enable remote state storage with Amazon S3:
+
+1. Create an S3 bucket by using the aws_s3_bucket resource:
+
+```
+resource "aws_s3_bucket" "terraform_state" {
+ bucket = "terraform-up-and-running-state"
+}
+```
+
+Prevent accidental deletion of this S3 bucket ( if you want to delete it, you can
+just comment this setting out.)
+
+```
+lifecycle {
+ prevent_destroy = true
+ }
+```
+
+Enable versioning so we can see the full revision history of our state files
+
+```
+versioning {
+ enabled = true
+}
+```
+
+Enable server-side encryption by default
+
+```
+server_side_encryption_configuration {
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
+```
+
+2. Create a DynamoDB table to use for locking. DynamoDB supports strongly consistent reads and conditional writes, which are all the ingredients you need for a distributed lock system.
+
+To use DynamoDB for locking with Terraform, you must create a DynamoDB table that has a primary key called LockID (with this exact spelling and capitalization).
+
+```
+resource "aws_dynamodb_table" "terraform_locks" {
+  name = "terraform-up-and-running-locks"
+  billing_mode = "PAY_PER_REQUEST"
+  hash_key = "LockID"
+  attribute {
+  name = "LockID"
+  type = "S"
+  }
+}
+```
+
+3. Run Terraform init (terraform init upgrade) and terraform apply
+
+![](/images/apply-2.png)
+
+![](/images/apply-2.png)
+
+![](/images/apply-2.png)
+
+4. After everything is deployed, you will have an S3 bucket and DynamoDB table, but the Terraform state will still be stored locally. To configure Terraform to store the state in your S3 bucket (with encryption and locking), you need to add a backend configuration to your Terraform code(inside the Terraform block).
+
+```
+backend "s3" {
+    bucket         = "deserie-terraform-state"
+    key            = "global/s3/terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-state-locking"
+    encrypt        = true
+  }
+```
+
+With this backend enabled, Terraform will automatically pull the latest state from this S3 bucket before running a command, and automatically push the latest state to the S3 bucket after running a command.
 
 </p></details>
